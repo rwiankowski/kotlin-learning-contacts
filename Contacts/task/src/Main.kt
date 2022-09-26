@@ -1,5 +1,10 @@
 package contacts
 
 fun main() {
-    println("Hello World!")
+
+    val phoneBook = PhoneBook()
+
+    phoneBook.addContact()
+    println("A Phone Book with a single record created!")
+
 }
