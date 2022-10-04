@@ -1,6 +1,11 @@
 package contacts
 
-data class Contact(var name : String, var surname : String) {
+import kotlinx.datetime.*
+
+abstract class Contact {
+
+    val createdTimestamp: LocalDateTime = Clock.System.now().toLocalDateTime(TimeZone.of("UTC+1"))
+    var updatedTimestamp: LocalDateTime = createdTimestamp
 
     var phoneNumber = ""
         get() = field.ifBlank { "[no number]" }
@@ -15,14 +20,5 @@ data class Contact(var name : String, var surname : String) {
             }
         }
 
-    constructor(_name: String, _surname:String, _phoneNumber: String) : this(_name, _surname) {
-        phoneNumber = _phoneNumber
-    }
-
-    override fun toString(): String {
-        return "$name $surname, $phoneNumber"
-    }
-
-    fun hasNumber() : Boolean = phoneNumber != ""
-
+    abstract fun printInfo()
 }
