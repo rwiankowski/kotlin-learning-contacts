@@ -1,20 +1,24 @@
 package contacts
 
 fun main() {
+    val filePath = "phonebook.json"
 
     val phoneBook = PhoneBook()
+    //phoneBook.diskData("load", filePath)
 
     do {
 
-        println("\nEnter action (add, remove, edit, count, info, exit):")
+        println("\n[menu] Enter action (add, list, search, count, exit):")
 
         when(readln().lowercase()) {
             "add" -> phoneBook.addContact()
-            "remove" -> phoneBook.removeContact()
-            "edit" -> phoneBook.editContact()
+            "list" -> phoneBook.listAllContacts()
+            "search" -> phoneBook.searchForContact()
             "count" -> println("The Phone Book has ${phoneBook.countContacts()} records.")
-            "info" -> phoneBook.getContactInfo()
-            "exit" -> return
+            "exit" -> {
+                phoneBook.diskData("save", filePath)
+                return
+            }
             else -> println("Unknown command! Please made a valid selection!")
         }
 

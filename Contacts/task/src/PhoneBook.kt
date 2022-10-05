@@ -3,22 +3,118 @@ package contacts
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import java.io.File
+import com.squareup.moshi.*
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import com.squareup.moshi.adapters.*
+
+enum class ContactType {
+    PersonType,
+    BusinessType
+}
+
 
 class PhoneBook {
-    private val contacts = mutableListOf<Contact>()
+    private var contacts = mutableListOf<Contact>()
 
+    fun diskData(action: String, filePath: String) {
+
+
+
+        val jsonFile = File(filePath)
+        val moshi = Moshi.Builder()
+            .add(PolymorphicJsonAdapterFactory.of(Contact::class.java, "type")
+                .withSubtype(Person::class.java, "PersonType")
+                .withSubtype(Business::class.java, "BusinessType"))
+            .add(KotlinJsonAdapterFactory())
+            .build()
+        val type = Types.newParameterizedType(MutableList::class.java, Contact::class.java)
+        val taskListAdapter : JsonAdapter<MutableList<Contact>> = moshi.adapter(type)
+
+        if (action.lowercase() == "save") {
+            val jsonData = taskListAdapter.toJson(contacts)
+            jsonFile.writeText(jsonData)
+        }
+
+        if (action.lowercase() == "load") {
+            if (!jsonFile.exists()) return
+
+            val jsonData = jsonFile.readText()
+            contacts = taskListAdapter.fromJson(jsonData)!!
+        }
+
+
+    }
     fun addContact() {
 
         print("Enter the type (person, organization): ")
-        when(readln()) {
+        when (readln()) {
             "person" -> addPerson()
             "organization" -> addOrganisation()
             else -> println("Please make a valid selection")
         }
     }
 
-    fun removeContact() {
-        val index = selectContact()
+    fun listAllContacts() {
+        if (contacts.size == 0) println("No records!")
+
+        var counter = 1
+        contacts.forEach { contact ->
+            println("${counter++}. $contact")
+        }
+
+        println("\n[list] Enter action ([number], back, again): ")
+        when (val listAction = readln()) {
+            "back" -> return
+            "again" -> listAllContacts()
+            else -> contactActions(listAction)
+        }
+    }
+
+    fun searchForContact() {
+
+        print("Enter search query: ")
+        val searchQuery = readln()
+        val searchResults = contacts.filter { it.searchString().contains(searchQuery, ignoreCase = true) }
+
+        println("Found ${searchResults.size} results:")
+        searchResults.forEach { println(it.toString()) }
+
+        println("\n[search] Enter action ([number], back, again): ")
+        when (val searchAction = readln()) {
+            "back" -> return
+            "again" -> searchForContact()
+            else -> contactActions(searchAction)
+        }
+
+    }
+
+    fun countContacts(): Int {
+        return contacts.size
+    }
+
+    private fun contactActions(input: String) {
+        val choice: Int
+
+        try {
+            choice = input.toInt() - 1
+            contacts[choice].printInfo()
+        } catch (e: Exception) {
+            println("Incorrect input!")
+            return
+        }
+
+        print("\n[record] Enter action (edit, delete, menu): ")
+
+        when (readln()) {
+            "edit" -> editContact(choice)
+            "delete" -> removeContact(choice)
+            else -> return
+        }
+    }
+
+    private fun removeContact(index: Int) {
+
         if (index == -1) {
             println("No records to remove")
             return
@@ -26,23 +122,18 @@ class PhoneBook {
         try {
             contacts.removeAt(index)
             println("The record removed!")
-        } catch (e : Exception) {
+        } catch (e: Exception) {
             println("Please select a valid record!")
         }
     }
 
-    fun editContact() {
-        val index = selectContact()
-        if (index == -1) {
-            println("No records to edit")
-            return
-        }
+    private fun editContact(index: Int) {
 
-        if (contacts[index] is Person ) {
+        if (contacts[index] is Person) {
             val contact = contacts[index] as Person
 
             print("Select a field (name, surname, birth, gender, number): ")
-            when(readln().lowercase()) {
+            when (readln().lowercase()) {
                 "name" -> contact.name = setValue("name", true)
                 "surname" -> contact.surname = setValue("surname", true)
                 "birth" -> contact.dateOfBirth = setValue("birth date", false)
@@ -56,7 +147,7 @@ class PhoneBook {
         if (contacts[index] is Business) {
             print("Select a field (name, address, number): ")
             val contact = contacts[index] as Business
-            when(readln().lowercase()) {
+            when (readln().lowercase()) {
                 "name" -> contact.name = setValue("name", true)
                 "address" -> contact.address = setValue("address", true)
                 "number" -> contact.phoneNumber = setValue("number", false)
@@ -64,14 +155,8 @@ class PhoneBook {
             }
         }
 
-        contacts[index].updatedTimestamp = Clock.System.now().toLocalDateTime(TimeZone.of("UTC+1"))
+        contacts[index].updatedTimestamp = Clock.System.now().toLocalDateTime(TimeZone.of("UTC+1")).toString()
         println("The record updated!")
-    }
-
-    fun getContactInfo() = contacts[selectContact()].printInfo()
-
-    fun countContacts(): Int {
-        return contacts.size
     }
 
     private fun addPerson() {
@@ -94,12 +179,12 @@ class PhoneBook {
 
     }
 
-    private fun setValue(valueName: String, mandatory: Boolean) : String {
-        var value : String
+    private fun setValue(valueName: String, mandatory: Boolean): String {
+        var value: String
         do {
             println("Enter the $valueName:")
             value = readln().trimEnd { it.isWhitespace() }
-            if(value.isBlank()) {
+            if (value.isBlank()) {
                 if (mandatory) println("Please enter a valid $valueName: ")
                 else break
             }
@@ -107,25 +192,5 @@ class PhoneBook {
         return value
     }
 
-    private fun listAllContacts() : Boolean {
-        if(contacts.size == 0) return false
 
-        var counter = 1
-        contacts.forEach { contact ->
-            println("${counter++}. $contact")
-        }
-        return true
-    }
-
-    private fun selectContact() : Int {
-        var index = -1
-        if (!listAllContacts()) return -1
-        print("Select a record:")
-        try {
-            index = readln().toInt() - 1
-        } catch (e : Exception) {
-            println("Please select a valid record!")
-        }
-        return index
-    }
 }

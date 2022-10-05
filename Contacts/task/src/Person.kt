@@ -5,12 +5,16 @@ import kotlinx.datetime.*
 
 class Person(var name : String, var surname : String) : Contact() {
 
+    override val type = "PersonType"
+
     var gender = ""
         get() = field.ifBlank { "[no data]" }
 
         set(value) {
             val regex = """[M|F]?""".toRegex()
-            field = if (value.matches(regex)) value else {
+            field = if (value.matches(regex)) value
+            else if(value == "[no data]") ""
+            else {
                 println("Bad Gender!")
                 ""
             }
@@ -21,6 +25,7 @@ class Person(var name : String, var surname : String) : Contact() {
 
         set(value) {
             if (value.isBlank()) field = ""
+            else if(value == "[no data]") field = ""
             else {
                 try {
                     value.toLocalDate()
@@ -32,6 +37,8 @@ class Person(var name : String, var surname : String) : Contact() {
         }
 
     override fun toString(): String = "$name $surname"
+
+    override fun searchString() = "$name + $surname + $dateOfBirth + $gender + $phoneNumber"
 
     constructor(_name: String, _surname: String, _dateOfBirth: String, _gender: String, _phoneNumber: String) : this(_name, _surname) {
         dateOfBirth = _dateOfBirth
@@ -45,8 +52,8 @@ class Person(var name : String, var surname : String) : Contact() {
         println("Birth date: $dateOfBirth")
         println("Gender: $gender")
         println("Number: $phoneNumber")
-        println("Time created: ${createdTimestamp.toString().substring(0,16)}")
-        println("Time last edit: ${updatedTimestamp.toString().substring(0,16)}")
+        println("Time created: $createdTimestamp")
+        println("Time last edit: $updatedTimestamp")
     }
 
 }
